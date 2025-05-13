@@ -1,0 +1,72 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/deck_provider.dart';
+import 'create_deck_screen.dart';
+import 'flashcard_screen.dart'; // Ensure this is the correct path to the FlashcardScreen file
+
+class DeckListScreen extends StatelessWidget {
+  const DeckListScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Mis Barajas')),
+      body: Consumer<DeckProvider>(
+        builder: (context, deckProv, _) {
+          final decks = deckProv.deckNames;
+          if (decks.isEmpty) {
+            return const Center(child: Text('No tienes barajas. ¡Crea la primera!'));
+          }
+          return ListView.builder(
+            itemCount: decks.length,
+            itemBuilder: (context, i) {
+              final name = decks[i];
+              final count = deckProv.getFlashcards(name).length;
+              return ListTile(
+                title: Text(name),
+                subtitle: Text('$count carta${count != 1 ? 's' : ''}'),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FlashcardScreen(deckName: name),
+                  ),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Eliminar baraja'),
+                        content: Text('¿Seguro que quieres borrar "$name"?'),
+                        actions: [
+                          TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancelar')),
+                          TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Eliminar')),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      await deckProv.deleteDeck(name);
+                    }
+                  },
+                ),
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CreateDeckScreen()),
+        ),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}

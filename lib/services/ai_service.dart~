@@ -1,0 +1,102 @@
+// lib/services/ai_service.dart
+
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../models/flashcard.dart';
+
+class AiService {
+  final String _apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+
+  /// Genera una lista de Flashcards a partir de [text] usando Gemini-2.0-Flash.
+  Future<List<Flashcard>> generateFlashcards(String text) async {
+    // 1) Clave de API
+    if (_apiKey.isEmpty) {
+      throw Exception('GEMINI_API_KEY no configurada en .env');
+    }
+    // 2) CORS en Web
+    if (kIsWeb) {
+      throw Exception(
+        'La API de Gemini no funciona desde Web por CORS; '
+            'prueba en un dispositivo móvil o escritorio.',
+      );
+    }
+
+    // 3) Construcción de la URI (v1beta + :generateContent)
+    final uri = Uri.parse(
+      'https://generativelanguage.googleapis.com'
+          '/v1beta/models/gemini-2.0-flash:generateContent'
+          '?key=$_apiKey',
+    );
+
+    // 4) Cuerpo de la petición (igual al curl)
+    final body = jsonEncode({
+      'contents': [
+        {
+          'parts': [
+            {
+              'text':
+              'Por favor, genera un JSON con un array de objetos '
+                  '{"question": "...", "answer": "..."} basado en este texto:\n$text',
+            },
+          ],
+        },
+      ],
+    });
+
+    // 5) Envío de la petición
+    final response = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: body,
+    );
+
+    // 6) Manejo de errores HTTP
+    if (response.statusCode == 401) {
+      throw Exception('API Key inválida o sin permisos en Gemini.');
+    }
+    if (response.statusCode == 429) {
+      throw Exception('Límite de cuota de Gemini superado.');
+    }
+    if (response.statusCode != 200) {
+      String msg;
+      try {
+        msg = jsonDecode(response.body)['error']['message'];
+      } catch (_) {
+        msg = response.body;
+      }
+      throw Exception('Error Gemini: $msg');
+    }
+
+    // 7) Parseo de la respuesta
+    try {
+      final data = jsonDecode(response.body);
+      final candidates = data['candidates'] as List<dynamic>?;
+      if (candidates == null || candidates.isEmpty) {
+        throw Exception('Gemini no devolvió candidatos.');
+      }
+
+      final content = candidates[0]['content'] as Map<String, dynamic>?;
+      final parts = content?['parts'] as List<dynamic>?;
+      if (parts == null || parts.isEmpty) {
+        throw Exception('Respuesta de Gemini sin partes de contenido.');
+      }
+
+      final rawText = parts[0]['text'] as String;
+      final List<dynamic> jsonList = jsonDecode(rawText);
+
+      // 8) Construcción de la lista de Flashcards
+      return jsonList
+          .map(
+            (e) => Flashcard(
+          question: e['question'] as String,
+          answer: e['answer'] as String,
+        ),
+      )
+          .toList();
+    } catch (e) {
+      throw Exception('Error procesando respuesta de Gemini: $e');
+    }
+  }
+}
