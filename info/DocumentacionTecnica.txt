@@ -1,0 +1,154 @@
+# DOCUMENTACIÓN TÉCNICA
+# MANUAL DE INSTALACIÓN, CONFIGURACIÓN Y MANTENIMIENTO
+
+## 1. INTRODUCCIÓN
+Este documento proporciona instrucciones detalladas para la instalación, configuración y mantenimiento de la aplicación Flashcards desarrollada con Flutter.
+
+## 2. REQUISITOS DEL SISTEMA
+- Flutter SDK ^3.7.0
+- Dart SDK ^3.7.0
+- Android Studio / Visual Studio Code
+- Git
+- Para desarrollo:
+  - Mínimo 8GB RAM
+  - 10GB espacio libre en disco
+  - Procesador i5 o equivalente (8ª generación o superior)
+- Para despliegue:
+  - Android 5.0+ o iOS 12.0+
+  - 100MB espacio libre en dispositivo
+
+## 3. INSTALACIÓN DEL ENTORNO DE DESARROLLO
+
+### 3.1. Instalación de Flutter
+```bash
+# Descargar Flutter SDK desde flutter.dev
+# Extraer en la ubicación deseada (Ej: C:\dev\flutter)
+# Añadir flutter/bin al PATH del sistema
+
+# Verificar instalación
+flutter doctor
+```
+
+### 3.2. Configuración del IDE
+#### Android Studio
+1. Instalar Android Studio
+2. Instalar plugins de Flutter y Dart
+3. Configurar Android SDK
+4. Configurar un emulador Android
+
+#### Visual Studio Code
+1. Instalar VS Code
+2. Instalar extensiones de Flutter y Dart
+3. Configurar la ruta de Flutter SDK
+
+## 4. ESTRUCTURA DEL PROYECTO
+
+```
+lib/
+├── models/             # Modelos de datos
+├── services/           # Servicios y lógica de negocio
+├── screens/            # Pantallas de la aplicación
+├── widgets/            # Widgets reutilizables
+├── theme/              # Configuración de temas
+├── utils/              # Utilidades y helpers
+└── main.dart           # Punto de entrada de la aplicación
+
+test/                   # Tests unitarios y de widgets
+android/                # Configuración específica para Android
+ios/                    # Configuración específica para iOS
+web/                    # Configuración para web (si aplicable)
+assets/                 # Recursos estáticos (imágenes, fuentes, etc.)
+pubspec.yaml            # Dependencias y configuración del proyecto
+```
+
+## 5. CONFIGURACIÓN DEL PROYECTO
+
+### 5.1. Clonar el repositorio
+```bash
+git clone https://github.com/tuusuario/flashcards.git
+cd flashcards
+```
+
+### 5.2. Instalar dependencias
+```bash
+flutter pub get
+```
+
+### 5.3. Configuración de la base de datos Hive
+Hive es una base de datos NoSQL ligera que se utiliza para almacenamiento local.
+
+```dart
+// Inicialización de Hive en main.dart
+await Hive.initFlutter();
+await Hive.openBox('flashcards');
+```
+
+## 6. COMPILACIÓN Y DESPLIEGUE
+
+### 6.1. Compilación para desarrollo
+```bash
+flutter run
+```
+
+### 6.2. Compilación para producción
+#### Android
+```bash
+flutter build apk --release
+# El APK se generará en build/app/outputs/flutter-apk/app-release.apk
+```
+
+#### iOS
+```bash
+flutter build ios --release
+# Abrir ios/Runner.xcworkspace en Xcode y desplegar desde allí
+```
+
+## 7. MANTENIMIENTO
+
+### 7.1. Actualización de dependencias
+```bash
+flutter pub outdated    # Verificar dependencias obsoletas
+flutter pub upgrade     # Actualizar dependencias
+```
+
+### 7.2. Gestión de versiones
+- Seguir versionado semántico (MAJOR.MINOR.PATCH)
+- Actualizar versión en pubspec.yaml
+
+### 7.3. Respaldo de datos
+- Los datos de Hive se almacenan en el directorio de la aplicación
+- Se recomienda implementar exportación/importación de datos para los usuarios
+
+### 7.4. Depuración
+```bash
+flutter clean           # Limpiar archivos generados
+flutter doctor          # Verificar estado del entorno
+flutter analyze         # Análisis estático del código
+```
+
+## 8. SEGURIDAD
+
+### 8.1. Almacenamiento seguro
+- Para datos sensibles, utilizar flutter_secure_storage
+- Implementar cifrado para datos críticos
+
+### 8.2. Actualizaciones de seguridad
+- Mantener Flutter y todas las dependencias actualizadas
+- Revisar regularmente avisos de seguridad
+
+## 9. RESOLUCIÓN DE PROBLEMAS COMUNES
+
+| Problema | Posible solución |
+|----------|-----------------|
+| Error de compilación | `flutter clean` seguido de `flutter pub get` |
+| Problemas con Hive | Verificar inicialización de adaptadores |
+| Errores de UI | Verificar widgets con Flutter Inspector |
+| Rendimiento lento | Usar Flutter DevTools para identificar cuellos de botella |
+
+## 10. RECURSOS ADICIONALES
+- Documentación oficial de Flutter: flutter.dev/docs
+- Documentación de Hive: docs.hivedb.dev
+- Comunidad de Flutter: stackoverflow.com/questions/tagged/flutter
+
+---
+Este documento está sujeto a actualizaciones. Última revisión: 16 de junio de 2025.

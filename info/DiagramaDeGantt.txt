@@ -1,0 +1,116 @@
+# DIAGRAMA DE GANTT Y CRONOGRAMA
+# PLANIFICACIÓN TEMPORAL DEL PROYECTO FLASHCARDS
+
+## CRONOGRAMA DEL PROYECTO
+
+### FASE 1: ANÁLISIS Y PLANIFICACIÓN (2 semanas)
+| Tarea | Duración | Fecha inicio | Fecha fin | Responsable(s) | Dependencias |
+|-------|----------|--------------|-----------|----------------|--------------|
+| Estudio de mercado | 5 días | 01/01/2025 | 05/01/2025 | Analista | - |
+| Definición de requisitos | 3 días | 06/01/2025 | 08/01/2025 | Product Owner, Desarrollador | Estudio de mercado |
+| Diseño conceptual | 4 días | 09/01/2025 | 12/01/2025 | Diseñador UI/UX | Definición de requisitos |
+| Planificación de sprint | 2 días | 13/01/2025 | 14/01/2025 | Equipo completo | Diseño conceptual |
+
+### FASE 2: DISEÑO (3 semanas)
+| Tarea | Duración | Fecha inicio | Fecha fin | Responsable(s) | Dependencias |
+|-------|----------|--------------|-----------|----------------|--------------|
+| Wireframes y prototipos | 5 días | 15/01/2025 | 19/01/2025 | Diseñador UI/UX | Planificación |
+| Diseño de arquitectura | 4 días | 15/01/2025 | 18/01/2025 | Arquitecto Software | Planificación |
+| Diseño de base de datos | 3 días | 19/01/2025 | 21/01/2025 | Desarrollador Backend | Diseño de arquitectura |
+| Diseño final UI | 7 días | 20/01/2025 | 26/01/2025 | Diseñador UI/UX | Wireframes y prototipos |
+| Revisión de diseño | 2 días | 27/01/2025 | 28/01/2025 | Equipo completo | Diseño final UI, Diseño de BD |
+
+### FASE 3: IMPLEMENTACIÓN FRONTEND (4 semanas)
+| Tarea | Duración | Fecha inicio | Fecha fin | Responsable(s) | Dependencias |
+|-------|----------|--------------|-----------|----------------|--------------|
+| Configuración del proyecto Flutter | 2 días | 01/02/2025 | 02/02/2025 | Desarrollador Frontend | Revisión de diseño |
+| Implementación de estructura básica | 3 días | 03/02/2025 | 05/02/2025 | Desarrollador Frontend | Configuración del proyecto |
+| Desarrollo de widgets reutilizables | 4 días | 06/02/2025 | 09/02/2025 | Desarrollador Frontend | Estructura básica |
+| Pantalla principal y navegación | 3 días | 10/02/2025 | 12/02/2025 | Desarrollador Frontend | Widgets reutilizables |
+| Vista de barajas y tarjetas | 4 días | 13/02/2025 | 16/02/2025 | Desarrollador Frontend | Pantalla principal |
+| Animaciones de tarjetas | 5 días | 17/02/2025 | 21/02/2025 | Desarrollador Frontend | Vista de barajas |
+| Ajustes y personalización | 3 días | 22/02/2025 | 24/02/2025 | Desarrollador Frontend | - |
+| Revisión de Sprint | 2 días | 25/02/2025 | 26/02/2025 | Equipo completo | Todas las tareas de Frontend |
+
+### FASE 4: IMPLEMENTACIÓN BACKEND Y DATOS (3 semanas)
+| Tarea | Duración | Fecha inicio | Fecha fin | Responsable(s) | Dependencias |
+|-------|----------|--------------|-----------|----------------|--------------|
+| Configuración de Hive | 2 días | 01/03/2025 | 02/03/2025 | Desarrollador Backend | Revisión de Sprint Frontend |
+| Modelos de datos | 3 días | 03/03/2025 | 05/03/2025 | Desarrollador Backend | Configuración de Hive |
+| Servicios de datos | 4 días | 06/03/2025 | 09/03/2025 | Desarrollador Backend | Modelos de datos |
+| Lógica de negocio | 5 días | 10/03/2025 | 14/03/2025 | Desarrollador Backend | Servicios de datos |
+| Integración Frontend-Backend | 4 días | 15/03/2025 | 18/03/2025 | Equipo de desarrollo | Lógica de negocio |
+| Revisión de Sprint | 2 días | 19/03/2025 | 20/03/2025 | Equipo completo | Integración |
+
+### FASE 5: TESTING (2 semanas)
+| Tarea | Duración | Fecha inicio | Fecha fin | Responsable(s) | Dependencias |
+|-------|----------|--------------|-----------|----------------|--------------|
+| Tests unitarios | 4 días | 21/03/2025 | 24/03/2025 | Desarrollador Testing | Integración |
+| Tests de widgets | 3 días | 25/03/2025 | 27/03/2025 | Desarrollador Testing | Tests unitarios |
+| Tests de integración | 3 días | 28/03/2025 | 30/03/2025 | Desarrollador Testing | Tests de widgets |
+| Pruebas de usuario | 4 días | 31/03/2025 | 03/04/2025 | QA, Usuarios beta | Tests de integración |
+| Corrección de errores | 5 días | 31/03/2025 | 04/04/2025 | Equipo de desarrollo | Identificación de errores |
+
+### FASE 6: DESPLIEGUE Y LANZAMIENTO (2 semanas)
+| Tarea | Duración | Fecha inicio | Fecha fin | Responsable(s) | Dependencias |
+|-------|----------|--------------|-----------|----------------|--------------|
+| Optimización de rendimiento | 4 días | 05/04/2025 | 08/04/2025 | Equipo de desarrollo | Corrección de errores |
+| Preparación para tiendas | 3 días | 09/04/2025 | 11/04/2025 | Desarrollador | Optimización |
+| Generación de assets finales | 2 días | 12/04/2025 | 13/04/2025 | Diseñador | Preparación para tiendas |
+| Despliegue en Google Play | 2 días | 14/04/2025 | 15/04/2025 | DevOps | Assets finales |
+| Despliegue en Apple App Store | 2 días | 14/04/2025 | 15/04/2025 | DevOps | Assets finales |
+| Monitorización post-lanzamiento | 3 días | 16/04/2025 | 18/04/2025 | Equipo completo | Despliegue |
+
+## DIAGRAMA DE GANTT
+
+```
+[Enero 2025]                  [Febrero 2025]                [Marzo 2025]                 [Abril 2025]
+01 05 10 15 20 25 30         01 05 10 15 20 25             01 05 10 15 20 25 30         01 05 10 15 20
+|-----|-----|-----|-------|   |-----|-----|-----|-----|     |-----|-----|-----|-----|     |-----|-----|---|
+
+=====> FASE 1: ANÁLISIS
+       =========> FASE 2: DISEÑO
+                      ================> FASE 3: FRONTEND
+                                         =========> FASE 4: BACKEND/DATOS
+                                                       ======> FASE 5: TESTING
+                                                                    ======> FASE 6: DESPLIEGUE
+```
+
+## HITOS DEL PROYECTO
+
+| Hito | Fecha | Entregables |
+|------|-------|------------|
+| Aprobación de requisitos | 08/01/2025 | Documento de requisitos |
+| Aprobación de diseño | 28/01/2025 | Mockups finales, Documento de arquitectura |
+| Primera versión funcional (MVP) | 26/02/2025 | Aplicación con funcionalidad básica |
+| Integración Frontend-Backend | 18/03/2025 | Sistema integrado funcionando localmente |
+| Testing completado | 04/04/2025 | Informe de pruebas, Lista de errores corregidos |
+| Lanzamiento | 15/04/2025 | Aplicación en tiendas |
+| Revisión post-lanzamiento | 18/04/2025 | Informe de métricas iniciales |
+
+## ASIGNACIÓN DE RECURSOS
+
+| Rol | Dedicación | Fases principales |
+|-----|------------|-------------------|
+| Product Owner | 40% | 1, 2, 6 |
+| Diseñador UI/UX | 100% | 1, 2 |
+| Desarrollador Frontend | 100% | 2, 3, 4, 5 |
+| Desarrollador Backend | 100% | 2, 4, 5 |
+| QA/Tester | 80% | 5, 6 |
+| DevOps | 30% | 6 |
+
+## PLAN DE CONTINGENCIA
+
+| Riesgo | Probabilidad | Impacto | Plan de mitigación |
+|--------|-------------|---------|-------------------|
+| Retraso en el desarrollo | Media | Alto | Buffer de tiempo (2 días) al final de cada fase |
+| Problemas de compatibilidad | Media | Medio | Testing temprano en múltiples dispositivos |
+| Cambios en requisitos | Alta | Alto | Gestión de cambios con aprobación del Product Owner |
+| Rendimiento insuficiente | Baja | Alto | Pruebas de rendimiento en cada sprint |
+| Rechazo en tiendas | Baja | Crítico | Revisión de guidelines previa al envío |
+
+---
+
+*Nota: Este documento es una representación textual de lo que sería un diagrama de Gantt real. En un documento final, se recomienda utilizar una herramienta especializada como MS Project, GanttProject o similar para generar el diagrama visual.*
+
+*Última actualización: 16 de junio de 2025*

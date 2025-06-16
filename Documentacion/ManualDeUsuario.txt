@@ -1,0 +1,142 @@
+# MANUAL DE USUARIO
+# APLICACIÓN FLASHCARDS
+
+## BIENVENIDA
+
+¡Gracias por elegir Flashcards! Esta aplicación te ayudará a mejorar tu aprendizaje y retención de información mediante tarjetas de estudio digitales. Este manual te guiará paso a paso para aprovechar todas sus funciones.
+
+## ÍNDICE
+1. Primeros pasos
+2. Pantalla principal
+3. Crear y gestionar barajas
+4. Crear tarjetas de estudio
+5. Modo de estudio
+6. Preguntas frecuentes
+7. Solución de problemas
+
+## 1. PRIMEROS PASOS
+
+### Instalación
+1. Descarga la aplicación desde Google Play Store o Apple App Store
+2. Abre la aplicación tras la instalación
+3. No requiere registro - ¡empieza a usar la app inmediatamente!
+
+### Navegación básica
+La aplicación tiene una navegación sencilla con tres secciones principales:
+- **Mis Barajas**: Lista todas tus colecciones de tarjetas
+- **Estadísticas**: Seguimiento de tu progreso
+- **Ajustes**: Personaliza la aplicación
+
+## 2. PANTALLA PRINCIPAL
+
+![Pantalla principal](imagen_pantalla_principal.jpg)
+
+En la pantalla principal encontrarás:
+- Lista de todas tus barajas de tarjetas
+- Botón "+" para crear nuevas barajas
+- Búsqueda para encontrar barajas específicas
+- Menú de navegación inferior
+
+## 3. CREAR Y GESTIONAR BARAJAS
+
+### Crear una nueva baraja
+1. Pulsa el botón "+" en la pantalla principal
+2. Asigna un nombre a tu baraja (por ejemplo, "Vocabulario inglés")
+3. Opcional: Añade una descripción
+4. Pulsa "Crear"
+
+### Editar una baraja existente
+1. Mantén pulsada la baraja que deseas editar
+2. Selecciona "Editar" en el menú emergente
+3. Modifica nombre, descripción o color
+4. Pulsa "Guardar"
+
+### Eliminar una baraja
+1. Mantén pulsada la baraja que deseas eliminar
+2. Selecciona "Eliminar" en el menú emergente
+3. Confirma la eliminación
+
+## 4. CREAR TARJETAS DE ESTUDIO
+
+### Añadir tarjetas tradicionales
+1. Selecciona una baraja
+2. Pulsa "Añadir tarjeta"
+3. Introduce la pregunta en "Anverso"
+4. Introduce la respuesta en "Reverso"
+5. Pulsa "Guardar"
+
+### Crear preguntas de opción múltiple
+1. Selecciona una baraja
+2. Pulsa "Añadir pregunta"
+3. Selecciona "Opción múltiple"
+4. Introduce la pregunta
+5. Añade opciones (mínimo 2, máximo 5)
+6. Marca la respuesta correcta
+7. Pulsa "Guardar"
+
+### Editar tarjetas
+1. En la vista de baraja, mantén pulsada la tarjeta
+2. Selecciona "Editar"
+3. Modifica el contenido
+4. Pulsa "Guardar"
+
+## 5. MODO DE ESTUDIO
+
+### Iniciar sesión de estudio
+1. Selecciona una baraja
+2. Pulsa "Estudiar"
+3. Elige tipo de estudio:
+   - Repaso completo
+   - Solo tarjetas difíciles
+   - Aleatorio
+
+### Durante el estudio
+- Desliza a la izquierda si fallaste la respuesta
+- Desliza a la derecha si acertaste la respuesta
+- Toca la tarjeta para voltearla y ver la respuesta
+- Pulsa "Pausar" para detener temporalmente
+
+### Resultados del estudio
+Al finalizar la sesión verás:
+- Porcentaje de aciertos
+- Tiempo empleado
+- Tarjetas que necesitan más repaso
+- Opción para repetir el estudio
+
+## 6. PREGUNTAS FRECUENTES
+
+**P: ¿Puedo compartir mis barajas con otros usuarios?**
+R: Actualmente no, pero planeamos añadir esta función en futuras actualizaciones.
+
+**P: ¿Se sincronizan mis datos entre dispositivos?**
+R: No, los datos se almacenan localmente en tu dispositivo.
+
+**P: ¿Puedo añadir imágenes a mis tarjetas?**
+R: Sí, pulsa el icono de imagen al crear o editar una tarjeta.
+
+**P: ¿Hay límite de tarjetas por baraja?**
+R: No, puedes crear tantas tarjetas como necesites.
+
+## 7. SOLUCIÓN DE PROBLEMAS
+
+**Problema: La aplicación se cierra inesperadamente**
+- Reinicia tu dispositivo
+- Asegúrate de tener la última versión instalada
+- Libera espacio en tu dispositivo si está casi lleno
+
+**Problema: Las tarjetas no se guardan**
+- Comprueba que tienes suficiente espacio de almacenamiento
+- Cierra otras aplicaciones abiertas
+- Reinicia la aplicación
+
+**Problema: Problemas con animaciones de tarjetas**
+- Verifica que tu dispositivo cumple los requisitos mínimos
+- Activa/desactiva el "Modo de ahorro de energía" en ajustes
+
+---
+
+¿Necesitas más ayuda? Contacta con nosotros:
+support@flashcardsapp.com
+
+---
+Manual de Usuario v1.0 - Última actualización: 16 de junio de 2025

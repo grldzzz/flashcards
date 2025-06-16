@@ -1,0 +1,101 @@
+# PRESENTACIÓN FINAL
+# PROYECTO FLASHCARDS APP
+
+## DIAPOSITIVA 1: PORTADA
+- **Título**: Flashcards App - Herramienta de Estudio Inteligente
+- **Subtítulo**: Proyecto Final Desarrollo Móvil
+- **Autor**: [Tu Nombre]
+- **Fecha**: Junio 2025
+
+## DIAPOSITIVA 2: ÍNDICE
+- Introducción al proyecto
+- Objetivos y alcance
+- Tecnologías utilizadas
+- Arquitectura y diseño
+- Demostración
+- Retos y soluciones
+- Resultados y métricas
+- Líneas futuras
+- Conclusiones
+
+## DIAPOSITIVA 3: INTRODUCCIÓN
+- **Contexto**: Necesidad de herramientas de aprendizaje efectivas
+- **Problema**: Dificultad en memorizar y retener información clave
+- **Solución**: Aplicación móvil con sistema de tarjetas de memoria
+- **Valor añadido**: Personalización y seguimiento del aprendizaje
+
+## DIAPOSITIVA 4: OBJETIVOS Y ALCANCE
+- Crear una aplicación funcional y completa para Android/iOS
+- Implementar sistema de flashcards tradicionales y opción múltiple
+- Desarrollar interfaz intuitiva y agradable
+- Almacenar datos localmente con persistencia
+- Implementar sistema de seguimiento del progreso
+
+## DIAPOSITIVA 5: TECNOLOGÍAS UTILIZADAS
+- **Framework**: Flutter 3.7+
+- **Lenguaje**: Dart 3.7+
+- **Persistencia**: Hive (base de datos NoSQL)
+- **Gestión de Estado**: Provider
+- **Animaciones**: Flip Card
+- **Testing**: Flutter Test, Integration Tests
+
+## DIAPOSITIVA 6: ARQUITECTURA
+- Diagrama de la arquitectura (MVC/MVVM)
+- Estructura de directorios
+- Flujo de datos
+- Modelo de objetos principales
+
+## DIAPOSITIVA 7: DISEÑO DE LA APLICACIÓN
+- **Principios de diseño**: Material Design / Human Interface
+- **Paleta de colores**: Esquema cromático y justificación
+- **Navegación**: Mapa de navegación de la aplicación
+- **Responsive**: Adaptabilidad a diferentes dispositivos
+
+## DIAPOSITIVA 8: CARACTERÍSTICAS PRINCIPALES
+- Creación y gestión de barajas de tarjetas
+- Sistema dual: flashcards y preguntas de opción múltiple
+- Animaciones de volteo de tarjetas
+- Estadísticas de aprendizaje
+- Personalización de barajas
+
+## DIAPOSITIVA 9: DEMOSTRACIÓN [VÍDEO/LIVE]
+- Creación de una nueva baraja
+- Añadir diferentes tipos de tarjetas
+- Sesión de estudio
+- Revisión de estadísticas
+
+## DIAPOSITIVA 10: RETOS Y SOLUCIONES
+- **Reto 1**: Optimización de animaciones → Solución: Implementación eficiente de Flip Card
+- **Reto 2**: Persistencia de datos → Solución: Uso de Hive como alternativa ligera a SQLite
+- **Reto 3**: Algoritmo de repetición espaciada → Solución: Implementación de algoritmo SM-2
+- **Reto 4**: Testing de UI → Solución: Creación de test widgets específicos
+
+## DIAPOSITIVA 11: RESULTADOS
+- **Rendimiento**: Métricas de la aplicación (FPS, tamaño, tiempo de carga)
+- **Usabilidad**: Resultados de pruebas con usuarios
+- **Objetivos cumplidos**: Análisis del alcance conseguido
+- **Métricas de calidad**: Cobertura de testing, análisis estático
+
+## DIAPOSITIVA 12: LÍNEAS FUTURAS
+- Sincronización en la nube
+- Compartir barajas entre usuarios
+- Implementación de elementos multimedia (audio, video)
+- Modos de estudio avanzados (repetición espaciada)
+- Exportación e importación de datos
+
+## DIAPOSITIVA 13: CONCLUSIONES
+- Valor del proyecto en el ámbito educativo
+- Aprendizajes técnicos adquiridos
+- Competencias desarrolladas durante el proyecto
+- Reflexión personal sobre el proceso
+
+## DIAPOSITIVA 14: PREGUNTAS Y RESPUESTAS
+- **Contacto**: [Tu email]
+- **Repositorio**: github.com/[usuario]/flashcards
+- **Agradecimientos**
+
+---
+
+*Este documento representa el contenido que formaría parte de la presentación final en formato PowerPoint o similar para la defensa del proyecto Flashcards App.*
+
+*Última actualización: 16 de junio de 2025*
