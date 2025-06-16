@@ -8,7 +8,7 @@ class DbService {
   // Singleton pattern
   static final DbService _instance = DbService._internal();
   static bool _initialized = false;
-  static final Completer<void> _initCompleter = Completer<void>();
+  static Completer<void>? _initCompleter;
   
   // Obtener instancia única
   factory DbService() => _instance;
@@ -22,7 +22,13 @@ class DbService {
   static const String statsBoxName = 'study_stats';
   
   // Para verificar si la inicialización está completa
-  Future<void> get ready => _initCompleter.future;
+  Future<void> get ready async {
+    if (_initialized) return;
+    if (_initCompleter != null && !_initCompleter!.isCompleted) {
+      return _initCompleter!.future;
+    }
+    return initialize();
+  }
   
   // Método seguro para acceder a una box
   Future<T> _safeBoxOperation<T>(String boxName, Future<T> Function(Box box) operation) async {
@@ -63,21 +69,19 @@ class DbService {
 
   /// Inicializar el servicio de base de datos
   Future<void> initialize() async {
-    // Si ya está inicializado, simplemente devuelve el futuro completado
+    // Si ya está inicializado, simplemente devuelve
     if (_initialized) {
-      return _initCompleter.future;
+      return;
     }
     
-    // Si la inicialización está en progreso pero no completada, devuelve el futuro
-    if (!_initCompleter.isCompleted) {
-      try {
-        print('DbService: Inicialización ya en progreso, esperando...');
-        return _initCompleter.future;
-      } catch (e) {
-        // Si hay un error esperando, continuamos con una nueva inicialización
-        print('Error esperando inicialización previa: $e');
-      }
+    // Si la inicialización está en progreso, esperar a que termine
+    if (_initCompleter != null && !_initCompleter!.isCompleted) {
+      print('DbService: Inicialización ya en progreso, esperando...');
+      return _initCompleter!.future;
     }
+    
+    // Crear un nuevo completer para esta inicialización
+    _initCompleter = Completer<void>();
     
     try {
       print('DbService: Inicializando...');
@@ -112,10 +116,10 @@ class DbService {
       
       print('DbService: Inicializado correctamente');
       _initialized = true;
-      _initCompleter.complete();
+      _initCompleter!.complete();
     } catch (e) {
       print('DbService: Error crítico durante la inicialización: $e');
-      _initCompleter.completeError(e);
+      _initCompleter!.completeError(e);
       throw Exception('Error inicializando la base de datos: $e');
     }
   }

@@ -59,22 +59,20 @@ class _AppStartupState extends State<AppStartup> {
       await Hive.openBox('app_settings');
       await Hive.openBox('study_stats');
       
+      // Inicializar el servicio de base de datos UNA SOLA VEZ
+      final dbService = DbService();
+      await dbService.initialize();
+      print('DbService inicializado correctamente');
+      
+      // Migrar datos si es necesario
       try {
-        // Inicializar el servicio de base de datos
-        final dbService = DbService();
-        await dbService.initialize();
-        // Intentar migrar datos si es necesario
-        await Future.delayed(const Duration(milliseconds: 500)); // Pequeña pausa para asegurar que Hive esté listo
         await dbService.migrateDataIfNeeded();
-        print('DbService inicializado correctamente');
+        print('Migración de datos completada');
       } catch (e) {
-        print('Advertencia: Problema al inicializar DbService: $e');
-        // Mostrar el error en la consola para depuración
-        print('Detalles del error: ${e.toString()}');
-        // Continuamos con la aplicación aunque haya problemas con DbService
+        print('Advertencia: Problema durante la migración: $e');
       }
       
-      // Inicializar proveedores
+      // Inicializar proveedores (estos ya no necesitan inicializar DbService)
       await ThemeProvider.initialize();
       await StudyStatsProvider.initialize();
       
