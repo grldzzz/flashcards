@@ -19,11 +19,47 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
   final _aiService = AiService();
   final _inputCtrl = TextEditingController();
   bool _loading = false;
+  bool _isLoadingCards = true;
+  List<Flashcard> _cards = [];
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFlashcards();
+  }
+
+  Future<void> _loadFlashcards() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoadingCards = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final deckProv = Provider.of<DeckProvider>(context, listen: false);
+      final cards = await deckProv.getFlashcardsAsync(widget.deckName);
+      
+      if (mounted) {
+        setState(() {
+          _cards = cards;
+          _isLoadingCards = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error cargando tarjetas: ${e.toString()}';
+          _isLoadingCards = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final deckProv = context.watch<DeckProvider>();
-    final cards = deckProv.getFlashcards(widget.deckName);
 
     return Scaffold(
       appBar: AppBar(
@@ -48,11 +84,34 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
           ),
         ],
       ),
-      body: cards.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+      body: _isLoadingCards
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, size: 48, color: AppTheme.errorColor),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error al cargar tarjetas',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(_errorMessage!),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadFlashcards,
+                        child: const Text('Reintentar'),
+                      ),
+                    ],
+                  ),
+                )
+              : _cards.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
                   Container(
                     height: 120,
                     width: 120,
@@ -85,9 +144,9 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
             )
           : ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: cards.length,
-              itemBuilder: (context, i) {
-                final card = cards[i];
+              itemCount: _cards.length,
+              itemBuilder: (context, index) {
+                final card = _cards[index];
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: FlipCard(
@@ -134,6 +193,25 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
                                     ),
                                   ),
                                 ],
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 12,
+                            right: 12,
+                            child: GestureDetector(
+                              onTap: () => _toggleFavorite(index),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Icon(
+                                  card.isFavorite ? Icons.favorite : Icons.favorite_border,
+                                  color: card.isFavorite ? Colors.red : Colors.white,
+                                  size: 20,
+                                ),
                               ),
                             ),
                           ),
@@ -231,6 +309,12 @@ class _FlashcardScreenState extends State<FlashcardScreen> {
         backgroundColor: AppTheme.accentColor,
       ),
     );
+  }
+
+  void _toggleFavorite(int index) {
+    final deckProv = context.read<DeckProvider>();
+    final card = deckProv.getFlashcards(widget.deckName)[index];
+    deckProv.toggleFavorite(widget.deckName, card);
   }
 
   void _showGenerateDialog() {

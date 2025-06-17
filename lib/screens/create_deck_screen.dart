@@ -4,6 +4,9 @@ import '../models/flashcard.dart';
 import '../providers/deck_provider.dart';
 import '../services/ai_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/logger.dart';
+import '../utils/validation_utils.dart';
+import '../utils/app_constants.dart';
 
 class CreateDeckScreen extends StatefulWidget {
   const CreateDeckScreen({Key? key}) : super(key: key);
@@ -42,7 +45,7 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
   
   // Actualizar el estado cuando cambia el contenido
   void _updateContentState() {
-    final hasText = _contentCtrl.text.trim().isNotEmpty;
+    final hasText = !ValidationUtils.isEmptyOrWhitespace(_contentCtrl.text);
     if (hasText != _contentHasText) {
       setState(() {
         _contentHasText = hasText;
@@ -395,8 +398,8 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
   
   Future<void> _createDeck() async {
     final name = _nameCtrl.text.trim();
-    if (name.isEmpty) {
-      setState(() => _error = 'El nombre no puede estar vacío');
+    if (ValidationUtils.isEmptyOrWhitespace(name)) {
+      setState(() => _error = AppConstants.errorEmptyDeckName);
       return;
     }
     setState(() {
@@ -410,7 +413,7 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       // Manejo mejorado de errores
-      print('Error al crear baraja: $e');
+      Logger.error('Error al crear baraja', e);
       if (mounted) {
         setState(() => _error = 'Error al crear baraja: ${e.toString().replaceFirst('Exception: ', '')}');
       }
@@ -423,15 +426,19 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
     final name = _nameCtrl.text.trim();
     final content = _contentCtrl.text.trim();
     
-    if (name.isEmpty) {
-      setState(() => _error = 'El nombre no puede estar vacío');
+    if (ValidationUtils.isEmptyOrWhitespace(name)) {
+      setState(() => _error = AppConstants.errorEmptyDeckName);
       return;
     }
     
-    if (content.isEmpty) {
-      setState(() => _error = 'El contenido no puede estar vacío');
+    if (ValidationUtils.isEmptyOrWhitespace(content)) {
+      setState(() => _error = AppConstants.errorEmptyContent);
       return;
     }
+    
+    // Detectar si el contenido es una URL para mejorar generación
+    bool isUrl = ValidationUtils.isValidUrl(content);
+    Logger.info('Generando flashcards a partir de ${isUrl ? "URL" : "texto"}: ${content.substring(0, content.length > 50 ? 50 : content.length)}...');
     
     setState(() {
       _generatingCards = true;
@@ -449,7 +456,7 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
         });
       }
     } catch (e) {
-      print('Error al generar flashcards: $e');
+      Logger.error('Error al generar flashcards', e);
       if (mounted) {
         setState(() => _error = 'Error al generar tarjetas: ${e.toString().replaceFirst('Exception: ', '')}');
       }
@@ -461,18 +468,15 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
   Future<void> _saveDeckWithCards() async {
     final name = _nameCtrl.text.trim();
     
-    if (name.isEmpty) {
-      setState(() {
-        _viewGeneratedCards = false;
-        _error = 'El nombre no puede estar vacío';
-      });
+    if (ValidationUtils.isEmptyOrWhitespace(name)) {
+      setState(() => _error = AppConstants.errorEmptyDeckName);
       return;
     }
     
     if (_generatedCards.isEmpty) {
       setState(() {
         _viewGeneratedCards = false;
-        _error = 'No hay tarjetas para guardar';
+        _error = AppConstants.errorEmptyCards;
       });
       return;
     }
@@ -485,12 +489,24 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
     try {
       // Usar try-catch para manejar posibles errores en el provider
       final provider = Provider.of<DeckProvider>(context, listen: false);
-      await provider.addDeck(name);
       
-      // Guardar todas las tarjetas generadas
-      for (final card in _generatedCards) {
-        await provider.addFlashcard(name, card);
+      // En lugar de crear una baraja vacía y luego añadir tarjetas individualmente,
+      // vamos a usar directamente addFlashcards que está diseñado para manejar esto
+      // de forma más eficiente en una sola operación de base de datos
+      await provider.addFlashcards(name, _generatedCards);
+      Logger.info('Baraja "$name" creada con ${_generatedCards.length} flashcards');
+      
+      // Forzar recarga explícita de la lista de barajas
+      await provider.getDeckNames();
+      
+      // Ahora validamos que la baraja se haya guardado correctamente
+      final decks = await provider.getDeckNames();
+      if (!decks.contains(name)) {
+        throw Exception('La baraja se guardó pero no aparece en la lista. Posible error de DB.');
       }
+      
+      Logger.info('Verificada baraja "$name" en lista de barajas: ${decks.join(", ")}');
+      
       
       // Mostrar mensaje de éxito antes de salir
       if (mounted) {
@@ -504,7 +520,7 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
         Navigator.pop(context);
       }
     } catch (e) {
-      print('Error al guardar baraja con tarjetas: $e');
+      Logger.error('Error al guardar baraja con tarjetas', e);
       if (mounted) {
         setState(() {
           _viewGeneratedCards = false;

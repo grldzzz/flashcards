@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/flashcard.dart';
 import '../models/multiple_choice_question.dart';
+import '../utils/logger.dart';
+import '../utils/app_constants.dart';
 
 /// Servicio simplificado para manejo de persistencia de datos utilizando Hive
 class DbService {
@@ -16,10 +19,10 @@ class DbService {
   // Constructor privado
   DbService._internal();
 
-  // Nombres de boxes
-  static const String decksBoxName = 'decks';
-  static const String settingsBoxName = 'app_settings';
-  static const String statsBoxName = 'study_stats';
+  // Usamos las constantes centralizadas
+  static const String decksBoxName = AppConstants.boxDecks;
+  static const String settingsBoxName = AppConstants.boxAppSettings;
+  static const String statsBoxName = AppConstants.boxStudyStats;
   
   // Para verificar si la inicialización está completa
   Future<void> get ready async {
@@ -36,7 +39,6 @@ class DbService {
       try {
         await ready;
       } catch (e) {
-        print('Error esperando inicialización: $e');
         // Continuamos intentando abrir la box directamente
       }
     }
@@ -53,7 +55,6 @@ class DbService {
       
       return await operation(box);
     } catch (e) {
-      print('Error en operación de base de datos ($boxName): $e');
       // Reintento con apertura forzada si es un error de acceso
       try {
         if (box == null) {
@@ -61,7 +62,7 @@ class DbService {
           return await operation(box);
         }
       } catch (reopenError) {
-        print('Error en segundo intento: $reopenError');
+        rethrow;
       }
       rethrow;
     }
@@ -76,7 +77,6 @@ class DbService {
     
     // Si la inicialización está en progreso, esperar a que termine
     if (_initCompleter != null && !_initCompleter!.isCompleted) {
-      print('DbService: Inicialización ya en progreso, esperando...');
       return _initCompleter!.future;
     }
     
@@ -84,27 +84,34 @@ class DbService {
     _initCompleter = Completer<void>();
     
     try {
-      print('DbService: Inicializando...');
-      
       // Intentar inicializar Hive si es necesario
       try {
-        print('Intentando inicializar Hive...');
-        await Hive.initFlutter();
+        if (kIsWeb) {
+          // En plataformas web, inicializar sin especificar path
+          await Hive.initFlutter();
+          
+          // Dar tiempo para que se inicialice correctamente
+          await Future.delayed(const Duration(milliseconds: 200));
+          Logger.info('Hive inicializado para plataforma web');
+        } else {
+          // En plataformas nativas como Windows, Android, etc.
+          await Hive.initFlutter();
+          Logger.info('Hive inicializado para plataforma nativa');
+        }
       } catch (e) {
         // Si ya está inicializado, esto puede lanzar un error que podemos ignorar
-        print('Nota: Hive posiblemente ya está inicializado: $e');
+        Logger.info('Hive ya está inicializado o hubo un problema menor: $e');
       }
       
       // Verificar si los adaptadores están registrados
       try {
         if (!Hive.isAdapterRegistered(0)) { // Flashcard adapter
-          print('Advertencia: Adaptadores no registrados. Intentando registrar...');
           Hive.registerAdapter(FlashcardAdapter());
           Hive.registerAdapter(MultipleChoiceQuestionAdapter());
         }
       } catch (e) {
-        print('Error al verificar adaptadores: $e');
         // Continuamos de todos modos
+        Logger.info('Los adaptadores podrían estar ya registrados: $e');
       }
       
       // Abrir las boxes básicas
@@ -114,11 +121,10 @@ class DbService {
         _openBox(statsBoxName),
       ]);
       
-      print('DbService: Inicializado correctamente');
       _initialized = true;
       _initCompleter!.complete();
     } catch (e) {
-      print('DbService: Error crítico durante la inicialización: $e');
+      Logger.error('Error grave al inicializar la base de datos', e);
       _initCompleter!.completeError(e);
       throw Exception('Error inicializando la base de datos: $e');
     }
@@ -127,25 +133,44 @@ class DbService {
   // Método auxiliar para abrir una box con manejo de errores
   Future<void> _openBox(String boxName) async {
     if (Hive.isBoxOpen(boxName)) {
-      print('Box "$boxName" ya está abierta');
+      Logger.db('Box "$boxName" ya está abierta');
       return;
     }
     
     try {
-      print('Abriendo box "$boxName"...');
-      await Hive.openBox(boxName);
-      print('Box "$boxName" abierta con éxito');
-    } catch (e) {
-      print('Error al abrir box "$boxName": $e');
+      Logger.db('Intentando abrir box "$boxName"');
       
+      // Verificamos si estamos en plataforma web (como Chrome)
+      if (kIsWeb) {
+        // Configuración especial para navegadores
+        Logger.db('Detectada plataforma web, usando configuración especial para "$boxName"');
+        
+        // En web, es importante esperar un poco para garantizar que IndexedDB esté listo
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+        // Para plataformas web no pasamos path porque causa problemas
+        final box = await Hive.openBox(boxName);
+        
+        // Verificamos que la box se haya abierto correctamente
+        // Y forzamos una operación de escritura para garantizar persistencia
+        if (!box.containsKey('_web_init_key')) {
+          await box.put('_web_init_key', true);
+        }
+      } else {
+        // En plataformas nativas, el comportamiento normal es suficiente
+        await Hive.openBox(boxName);
+      }
+      
+      Logger.db('Box "$boxName" abierta con éxito');
+    } catch (e) {
       // Intentar recuperación eliminando archivo corrupto
+      Logger.error('Error al abrir box "$boxName", intentando recuperación', e);
       try {
-        print('Intentando recuperación de "$boxName"...');
         await Hive.deleteBoxFromDisk(boxName);
         await Hive.openBox(boxName);
-        print('Recuperación exitosa para "$boxName"');
+        Logger.db('Box "$boxName" recuperada tras eliminar archivo corrupto');
       } catch (recoverError) {
-        print('Fallo en la recuperación de "$boxName": $recoverError');
+        Logger.error('Fallo crítico en recuperación de box "$boxName"', recoverError);
         throw Exception('No se puede abrir la base de datos "$boxName". Intenta reinstalar la aplicación.');
       }
     }
@@ -154,8 +179,7 @@ class DbService {
   /// Obtiene las flashcards de una baraja de forma segura
   Future<List<Flashcard>> getFlashcards(String deckName) async {
     if (deckName.isEmpty) {
-      print('Error: Nombre de baraja vacío al obtener flashcards');
-      return [];
+      throw Exception('No se puede obtener flashcards con nombre de baraja vacío');
     }
     
     try {
@@ -174,22 +198,20 @@ class DbService {
             return List<Flashcard>.from(stored);
           }
         } catch (e) {
-          print('Error convirtiendo flashcards: $e');
+          rethrow;
         }
         
         return <Flashcard>[];
       });
     } catch (e) {
-      print('Error crítico obteniendo flashcards: $e');
-      return [];
+      throw Exception('Error obteniendo flashcards: $e');
     }
   }
 
   /// Obtiene las preguntas de opción múltiple de una baraja de forma segura
   Future<List<MultipleChoiceQuestion>> getQuestions(String deckName) async {
     if (deckName.isEmpty) {
-      print('Error: Nombre de baraja vacío al obtener preguntas');
-      return [];
+      throw Exception('No se puede obtener preguntas con nombre de baraja vacío');
     }
     
     try {
@@ -202,15 +224,14 @@ class DbService {
             try {
               return List<MultipleChoiceQuestion>.from(questionsData);
             } catch (e) {
-              print('Error convirtiendo preguntas: $e');
+              rethrow;
             }
           }
         }
         return <MultipleChoiceQuestion>[];
       });
     } catch (e) {
-      print('Error obteniendo preguntas para "$deckName": $e');
-      return [];
+      throw Exception('Error obteniendo preguntas: $e');
     }
   }
 
@@ -218,22 +239,16 @@ class DbService {
   Future<void> saveDeck(String deckName, List<Flashcard> flashcards,
       [List<MultipleChoiceQuestion>? questions]) async {
     if (deckName.isEmpty) {
-      print('Error: No se puede guardar una baraja con nombre vacío');
       throw Exception('No se puede guardar una baraja con nombre vacío');
     }
     
     // Asegurarnos de que flashcards no sea null
-    final List<Flashcard> safeFlashcards = flashcards ?? [];
+    final List<Flashcard> safeFlashcards = flashcards;
     // Asegurarnos de que questions no sea null
     final List<MultipleChoiceQuestion> safeQuestions = questions ?? [];
     
     try {
       await _safeBoxOperation(decksBoxName, (box) async {
-        print('Guardando baraja "$deckName" con ${safeFlashcards.length} tarjetas y ${safeQuestions.length} preguntas');
-        
-        // Verificar si la baraja ya existe
-        final existing = box.get(deckName);
-        
         // Preparar los datos para guardar
         final Map<String, dynamic> deckData = {
           'flashcards': safeFlashcards,
@@ -242,6 +257,7 @@ class DbService {
         };
         
         // Si existe y es un mapa, preservar metadatos
+        final existing = box.get(deckName);
         if (existing is Map) {
           deckData['createdAt'] = existing['createdAt'] ?? DateTime.now().toIso8601String();
           deckData['lastStudied'] = existing['lastStudied'];
@@ -252,12 +268,9 @@ class DbService {
         
         // Guardar la baraja en formato unificado
         await box.put(deckName, deckData);
-        print('Baraja "$deckName" guardada con éxito');
-        
         return true;
       });
     } catch (e) {
-      print('Error crítico al guardar baraja "$deckName": $e');
       throw Exception('Error al guardar baraja: $e');
     }
   }
@@ -265,12 +278,10 @@ class DbService {
   /// Actualiza propiedades de una baraja existente de forma segura
   Future<void> updateDeck(String deckName, Map<String, dynamic> updates) async {
     if (deckName.isEmpty) {
-      print('Error: No se puede actualizar una baraja con nombre vacío');
       throw Exception('No se puede actualizar una baraja con nombre vacío');
     }
     
     if (updates.isEmpty) {
-      print('Advertencia: Se intentó actualizar una baraja con actualizaciones vacías');
       return; // No hay nada que hacer
     }
     
@@ -278,7 +289,6 @@ class DbService {
       await _safeBoxOperation(decksBoxName, (box) async {
         final existing = box.get(deckName);
         if (existing == null) {
-          print('No se encontró la baraja "$deckName" para actualizar');
           return false;
         }
         
@@ -286,20 +296,16 @@ class DbService {
           // Formato nuevo - fusión de mapas
           final updatedDeck = {...existing, ...updates};
           await box.put(deckName, updatedDeck);
-          print('Baraja "$deckName" actualizada (formato nuevo)');
+          return true;
         } else if (existing is List && updates.containsKey('flashcards')) {
           // Formato antiguo - actualización directa de la lista
           await box.put(deckName, updates['flashcards']);
-          print('Baraja "$deckName" actualizada (formato antiguo)');
+          return true;
         } else {
-          print('Formato no reconocido para baraja "$deckName"');
           return false;
         }
-        
-        return true;
       });
     } catch (e) {
-      print('Error crítico al actualizar baraja "$deckName": $e');
       throw Exception('Error al actualizar baraja: $e');
     }
   }
@@ -307,23 +313,19 @@ class DbService {
   /// Elimina una baraja de forma segura
   Future<void> deleteDeck(String deckName) async {
     if (deckName.isEmpty) {
-      print('Error: No se puede eliminar una baraja con nombre vacío');
       throw Exception('No se puede eliminar una baraja con nombre vacío');
     }
     
     try {
       await _safeBoxOperation(decksBoxName, (box) async {
         if (!box.containsKey(deckName)) {
-          print('No se encontró la baraja "$deckName" para eliminar');
           return false;
         }
         
         await box.delete(deckName);
-        print('Baraja "$deckName" eliminada con éxito');
         return true;
       });
     } catch (e) {
-      print('Error crítico al eliminar baraja "$deckName": $e');
       throw Exception('Error al eliminar baraja: $e');
     }
   }
@@ -334,37 +336,31 @@ class DbService {
       return await _safeBoxOperation(decksBoxName, (box) async {
         final keys = box.keys.cast<String>().toList();
         keys.sort();
-        print('${keys.length} nombres de barajas recuperados');
         return keys;
       });
     } catch (e) {
-      print('Error crítico obteniendo nombres de barajas: $e');
-      return [];
+      throw Exception('Error obteniendo nombres de barajas: $e');
     }
   }
 
   // Métodos para configuraciones de la aplicación de forma segura
   Future<void> saveSettings(String key, dynamic value) async {
     if (key.isEmpty) {
-      print('Error: No se puede guardar una configuración con clave vacía');
       throw Exception('No se puede guardar configuración con clave vacía');
     }
     
     try {
       await _safeBoxOperation(settingsBoxName, (box) async {
         await box.put(key, value);
-        print('Configuración "$key" guardada correctamente');
         return true;
       });
     } catch (e) {
-      print('Error crítico guardando configuración "$key": $e');
       throw Exception('Error al guardar configuración: $e');
     }
   }
 
   Future<T> getSettings<T>(String key, {T? defaultValue}) async {
     if (key.isEmpty) {
-      print('Advertencia: Intentando obtener configuración con clave vacía');
       return defaultValue as T;
     }
     
@@ -374,7 +370,6 @@ class DbService {
         return value as T;
       });
     } catch (e) {
-      print('Error obteniendo configuración "$key": $e');
       return defaultValue as T;
     }
   }
@@ -382,12 +377,10 @@ class DbService {
   // Métodos para estadísticas de estudio de forma segura
   Future<void> saveStudySession(String deckName, int cardsStudied, int correctAnswers) async {
     if (deckName.isEmpty) {
-      print('Error: No se puede guardar una sesión de estudio sin nombre de baraja');
       throw Exception('No se puede guardar una sesión de estudio sin nombre de baraja');
     }
     
     if (cardsStudied < 0 || correctAnswers < 0 || correctAnswers > cardsStudied) {
-      print('Error: Datos inválidos para estadísticas de estudio');
       throw Exception('Datos inválidos para estadísticas de estudio');
     }
     
@@ -406,7 +399,6 @@ class DbService {
       
       await _safeBoxOperation(statsBoxName, (box) async {
         await box.put(sessionId, sessionData);
-        print('Sesión de estudio para "$deckName" guardada correctamente');
         return true;
       });
       
@@ -414,11 +406,9 @@ class DbService {
       try {
         await updateDeck(deckName, {'lastStudied': DateTime.now().toIso8601String()});
       } catch (e) {
-        print('Advertencia: No se pudo actualizar fecha de último estudio: $e');
         // No interrumpimos la ejecución si esta parte falla
       }
     } catch (e) {
-      print('Error crítico guardando sesión de estudio: $e');
       throw Exception('Error al guardar sesión de estudio: $e');
     }
   }
@@ -426,8 +416,7 @@ class DbService {
   /// Obtiene las estadísticas de estudio de una baraja específica
   Future<List<Map<String, dynamic>>> getStudyStatsForDeck(String deckName) async {
     if (deckName.isEmpty) {
-      print('Error: Nombre de baraja vacío al obtener estadísticas');
-      return [];
+      throw Exception('Nombre de baraja vacío al obtener estadísticas');
     }
     
     try {
@@ -446,32 +435,11 @@ class DbService {
           }
         }
         
-        print('${stats.length} registros de estadísticas encontrados para "$deckName"');
         return stats;
       });
     } catch (e) {
-      print('Error crítico obteniendo estadísticas para "$deckName": $e');
-      return [];
+      throw Exception('Error obteniendo estadísticas para "$deckName": $e');
     }
-  }
-
-  /// Valida el formato de las estadísticas
-  bool _validateStudyStats(Map<String, dynamic> stats) {
-    // Campos requeridos
-    final requiredFields = ['deckName', 'cardsStudied', 'correctAnswers'];
-    for (var field in requiredFields) {
-      if (!stats.containsKey(field)) {
-        print('Estadísticas inválidas: falta campo "$field"');
-        return false;
-      }
-    }
-    
-    // Validar tipos de datos
-    if (stats['deckName'] is! String) return false;
-    if (stats['cardsStudied'] is! int) return false;
-    if (stats['correctAnswers'] is! int) return false;
-    
-    return true;
   }
 
   /// Obtiene todas las estadísticas de estudio de forma segura
@@ -489,12 +457,10 @@ class DbService {
           }
         }
         
-        print('${stats.length} registros de estadísticas recuperados');
         return stats;
       });
     } catch (e) {
-      print('Error crítico obteniendo estadísticas: $e');
-      return [];
+      throw Exception('Error obteniendo estadísticas: $e');
     }
   }
 
@@ -503,19 +469,15 @@ class DbService {
     try {
       await _safeBoxOperation(statsBoxName, (box) async {
         await box.delete('study_stats');
-        print('Estadísticas de estudio eliminadas correctamente');
         return true;
       });
     } catch (e) {
-      print('Error crítico limpiando estadísticas: $e');
       throw Exception('Error al limpiar estadísticas: $e');
     }
   }
 
   /// Método para migrar datos al nuevo formato de forma segura si es necesario
   Future<void> migrateDataIfNeeded() async {
-    print('DbService: Verificando si es necesario migrar datos...');
-    
     try {
       await _safeBoxOperation(decksBoxName, (box) async {
         bool needsMigration = false;
@@ -530,12 +492,8 @@ class DbService {
         }
         
         if (!needsMigration) {
-          print('DbService: No es necesario migrar datos');
           return false;
         }
-        
-        print('DbService: Migrando datos al nuevo formato...');
-        int migratedCount = 0;
         
         // Iterar sobre todas las barajas
         for (final deckName in box.keys.cast<String>().toList()) {
@@ -553,52 +511,38 @@ class DbService {
                 'createdAt': DateTime.now().toIso8601String(),
                 'lastStudied': null,
               });
-              
-              migratedCount++;
-              print('DbService: Migrada baraja "$deckName"');
             } catch (e) {
-              print('Error migrando baraja "$deckName": $e');
               // Continuamos con la siguiente baraja
             }
           }
         }
         
-        print('DbService: Migración completada. $migratedCount barajas migradas');
         return true;
       });
     } catch (e) {
-      print('DbService: Error durante la migración: $e');
       // No lanzamos excepción para no interrumpir la inicialización
     }
   }
 
   /// Método para limpiar todos los datos de forma segura (útil para pruebas o reset)
   Future<void> clearAllData() async {
-    print('ADVERTENCIA: Eliminando todos los datos de la aplicación');
-    
     try {
       // Limpiar cajas principales
       await Future.wait([
         _safeBoxOperation(decksBoxName, (box) async {
           await box.clear();
-          print('Datos de barajas eliminados');
           return true;
         }),
         _safeBoxOperation(settingsBoxName, (box) async {
           await box.clear();
-          print('Configuraciones eliminadas');
           return true;
         }),
         _safeBoxOperation(statsBoxName, (box) async {
           await box.clear();
-          print('Estadísticas eliminadas');
           return true;
         }),
       ]);
-      
-      print('Todos los datos han sido eliminados correctamente');
     } catch (e) {
-      print('Error crítico al limpiar datos: $e');
       throw Exception('Error al limpiar todos los datos: $e');
     }
   }

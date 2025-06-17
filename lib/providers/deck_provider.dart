@@ -4,6 +4,7 @@ import 'dart:math';
 import '../models/flashcard.dart';
 import '../models/multiple_choice_question.dart';
 import '../services/db_service.dart';
+import '../utils/logger.dart';
 
 class DeckProvider extends ChangeNotifier {
   // Instancia del servicio de base de datos
@@ -20,7 +21,7 @@ class DeckProvider extends ChangeNotifier {
       // Intentar migrar datos al nuevo formato si es necesario
       await _dbService.migrateDataIfNeeded();
     } catch (e) {
-      print('Error inicializando DbService en DeckProvider: $e');
+      Logger.error('Error inicializando DbService en DeckProvider', e);
       // No relanzamos la excepción para evitar romper la UI
     }
   }
@@ -39,14 +40,32 @@ class DeckProvider extends ChangeNotifier {
       _cachedDeckNames = names;
       return names;
     } catch (e) {
-      print('Error obteniendo nombres de barajas: $e');
+      Logger.error('Error obteniendo nombres de barajas', e);
       return [];
     }
   }
   
   /// Obtiene los nombres de barajas de forma síncronizada (para compatibilidad)
   List<String> get deckNames {
-    return _cachedDeckNames ?? [];
+    // Si no hay caché, iniciamos una carga asíncrona
+    if (_cachedDeckNames == null) {
+      _loadDeckNamesAsync();
+      return []; // Mientras tanto devolvemos lista vacía
+    }
+    return _cachedDeckNames!;
+  }
+  
+  /// Carga asíncrona de nombres de barajas en segundo plano
+  Future<void> _loadDeckNamesAsync() async {
+    try {
+      final names = await _dbService.getAllDeckNames();
+      _cachedDeckNames = names;
+      // Notificar a los widgets que escuchan este provider
+      notifyListeners();
+      Logger.info('Cargados ${names.length} nombres de barajas desde la DB');
+    } catch (e) {
+      Logger.error('Error cargando nombres de barajas de forma asíncrona', e);
+    }
   }
 
   /// Obtiene las flashcards de una baraja de forma asíncrona
@@ -54,7 +73,7 @@ class DeckProvider extends ChangeNotifier {
     try {
       return await _dbService.getFlashcards(deckName);
     } catch (e) {
-      print('Error obteniendo flashcards: $e');
+      Logger.error('Error obteniendo flashcards', e);
       return [];
     }
   }
@@ -70,7 +89,7 @@ class DeckProvider extends ChangeNotifier {
     try {
       return await _dbService.getQuestions(deckName);
     } catch (e) {
-      print('Error obteniendo preguntas: $e');
+      Logger.error('Error obteniendo preguntas', e);
       return [];
     }
   }
@@ -91,7 +110,7 @@ class DeckProvider extends ChangeNotifier {
       await _dbService.saveDeck(name, <Flashcard>[]);
       notifyListeners();
     } catch (e) {
-      print('Error al crear baraja: $e');
+      Logger.error('Error al crear baraja', e);
       rethrow;
     }
   }
@@ -104,7 +123,7 @@ class DeckProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('Error al eliminar baraja: $e');
+      Logger.error('Error al eliminar baraja', e);
       // No relanzamos la excepción para evitar fallos en la UI
     }
   }
@@ -118,14 +137,23 @@ class DeckProvider extends ChangeNotifier {
       }
       
       if (deckNames.contains(oldName)) {
-        final cards = getFlashcards(oldName);
-        final questions = getQuestions(oldName);
+        // Usar las versiones asíncronas para obtener datos reales
+        final cards = await getFlashcardsAsync(oldName);
+        final questions = await getQuestionsAsync(oldName);
+        
+        // Eliminar la baraja antigua y crear la nueva
         await _dbService.deleteDeck(oldName);
         await _dbService.saveDeck(newName, cards, questions);
+        
+        // Invalidar caché para forzar recarga de datos
+        _cachedDeckNames = null;
+        
+        Logger.info('Baraja "$oldName" renombrada a "$newName" con ${cards.length} tarjetas');
+        
         notifyListeners();
       }
     } catch (e) {
-      print('Error al renombrar baraja: $e');
+      Logger.error('Error al renombrar baraja', e);
       rethrow;
     }
   }
@@ -133,17 +161,17 @@ class DeckProvider extends ChangeNotifier {
   /// Añade una flashcard a la baraja
   Future<void> addFlashcard(String deckName, Flashcard card) async {
     if (deckName.isEmpty) {
-      print('Error: Nombre de baraja vacío al añadir flashcard');
+      Logger.error('Error: Nombre de baraja vacío al añadir flashcard', null);
       throw Exception('El nombre de la baraja no puede estar vacío');
     }
     
     if (card.question.isEmpty || card.answer.isEmpty) {
-      print('Error: Flashcard con contenido vacío');
+      Logger.error('Error: Flashcard con contenido vacío', null);
       throw Exception('La tarjeta debe tener pregunta y respuesta');
     }
     
     try {
-      print('Añadiendo flashcard a "$deckName": ${card.question.substring(0, min(20, card.question.length))}...');
+      Logger.db('Añadiendo flashcard a "$deckName": ${card.question.substring(0, min(20, card.question.length))}...');
       
       // Verificar si la baraja existe, si no, la creamos
       if (!deckNames.contains(deckName)) {
@@ -151,22 +179,25 @@ class DeckProvider extends ChangeNotifier {
         await addDeck(deckName);
       }
       
-      // Obtener flashcards existentes
-      final cards = getFlashcards(deckName);
+      // Obtener flashcards existentes usando la versión asíncrona que realmente lee de la DB
+      final cards = await getFlashcardsAsync(deckName);
       cards.add(card);
       
-      // Obtener preguntas existentes
-      final questions = getQuestions(deckName);
+      // Obtener preguntas existentes usando la versión asíncrona
+      final questions = await getQuestionsAsync(deckName);
       
       // Guardar la baraja actualizada
       await _dbService.saveDeck(deckName, cards, questions);
-      print('Flashcard añadida con éxito a "$deckName". Total: ${cards.length} tarjetas');
+      Logger.info('Flashcard añadida con éxito a "$deckName". Total: ${cards.length} tarjetas');
+      
+      // Invalidar caché para forzar recarga de datos
+      _cachedDeckNames = null;
       
       notifyListeners();
     } catch (e) {
-      print('Error al añadir flashcard a "$deckName": $e');
+      Logger.error('Error al añadir flashcard a "$deckName"', e);
       // Añadir detalles del error para depuración
-      print('Detalles de la flashcard - Pregunta: ${card.question.substring(0, min(30, card.question.length))}...');
+      Logger.error('Detalles de la flashcard - Pregunta: ${card.question.substring(0, min(30, card.question.length))}...', null);
       rethrow;
     }
   }
@@ -174,14 +205,20 @@ class DeckProvider extends ChangeNotifier {
   /// Quita la flashcard [index] de la baraja
   Future<void> removeFlashcard(String deckName, int index) async {
     try {
-      final cards = getFlashcards(deckName);
+      final cards = await getFlashcardsAsync(deckName);
       if (index < 0 || index >= cards.length) return;
       cards.removeAt(index);
-      final questions = getQuestions(deckName);
+      final questions = await getQuestionsAsync(deckName);
       await _dbService.saveDeck(deckName, cards, questions);
+      
+      // Invalidar caché para forzar recarga de datos
+      _cachedDeckNames = null;
+      
       notifyListeners();
+      
+      Logger.info('Flashcard eliminada de "$deckName". Quedan: ${cards.length} tarjetas');
     } catch (e) {
-      print('Error al eliminar flashcard: $e');
+      Logger.error('Error al eliminar flashcard', e);
       // No relanzamos la excepción para evitar fallos en la UI
     }
   }
@@ -189,17 +226,17 @@ class DeckProvider extends ChangeNotifier {
   /// Añade varias flashcards a una baraja
   Future<void> addFlashcards(String deckName, List<Flashcard> newCards) async {
     if (deckName.isEmpty) {
-      print('Error: Nombre de baraja vacío al añadir múltiples flashcards');
+      Logger.error('Error: Nombre de baraja vacío al añadir múltiples flashcards', null);
       throw Exception('El nombre de la baraja no puede estar vacío');
     }
     
     if (newCards.isEmpty) {
-      print('Advertencia: Se intentó añadir una lista vacía de flashcards');
+      Logger.info('Advertencia: Se intentó añadir una lista vacía de flashcards');
       return; // No hay necesidad de continuar si no hay tarjetas para añadir
     }
     
     try {
-      print('Añadiendo ${newCards.length} flashcards a "$deckName"');
+      Logger.db('Añadiendo ${newCards.length} flashcards a "$deckName"');
       
       // Verificar si la baraja existe, si no, la creamos
       if (!deckNames.contains(deckName)) {
@@ -207,8 +244,8 @@ class DeckProvider extends ChangeNotifier {
         await addDeck(deckName);
       }
       
-      // Obtener flashcards existentes
-      final cards = getFlashcards(deckName);
+      // Obtener flashcards existentes usando la versión asíncrona
+      final cards = await getFlashcardsAsync(deckName);
       
       // Filtrar tarjetas vacías o inválidas antes de añadirlas
       int tarjetasValidas = 0;
@@ -217,20 +254,23 @@ class DeckProvider extends ChangeNotifier {
           cards.add(card);
           tarjetasValidas++;
         } else {
-          print('Advertencia: Ignorando flashcard inválida (pregunta o respuesta vacía)');
+          Logger.info('Advertencia: Ignorando flashcard inválida (pregunta o respuesta vacía)');
         }
       }
       
-      // Obtener preguntas existentes
-      final questions = getQuestions(deckName);
+      // Obtener preguntas existentes usando la versión asíncrona
+      final questions = await getQuestionsAsync(deckName);
       
       // Guardar la baraja actualizada
       await _dbService.saveDeck(deckName, cards, questions);
-      print('${tarjetasValidas} flashcards añadidas con éxito a "$deckName". Total: ${cards.length} tarjetas');
+      Logger.info('${tarjetasValidas} flashcards añadidas con éxito a "$deckName". Total: ${cards.length} tarjetas');
+      
+      // Invalidar caché para forzar recarga de datos
+      _cachedDeckNames = null;
       
       notifyListeners();
     } catch (e) {
-      print('Error al añadir múltiples flashcards a "$deckName": $e');
+      Logger.error('Error al añadir múltiples flashcards a "$deckName"', e);
       rethrow;
     }
   }
@@ -249,7 +289,72 @@ class DeckProvider extends ChangeNotifier {
       await _dbService.saveDeck(deckName, cards, questions);
       notifyListeners();
     } catch (e) {
-      print('Error al añadir preguntas: $e');
+      Logger.error('Error al añadir preguntas', e);
+      rethrow;
+    }
+  }
+  
+  /// Alternar el estado de favorito de una tarjeta
+  Future<void> toggleFavorite(String deckName, Flashcard card) async {
+    try {
+      final cards = getFlashcards(deckName);
+      final questions = getQuestions(deckName);
+      
+      // Encontrar la tarjeta y cambiar su estado de favorito
+      for (int i = 0; i < cards.length; i++) {
+        if (cards[i].question == card.question && cards[i].answer == card.answer) {
+          cards[i].isFavorite = !cards[i].isFavorite;
+          break;
+        }
+      }
+      
+      // Guardar los cambios
+      await _dbService.saveDeck(deckName, cards, questions);
+      notifyListeners();
+    } catch (e) {
+      Logger.error('Error al cambiar favorito', e);
+      rethrow;
+    }
+  }
+  
+  /// Actualiza una flashcard específica en una baraja
+  /// 
+  /// Este método es importante para guardar el estado de repaso espaciado
+  /// como la dificultad, fechas de repaso y estado de aprendizaje.
+  Future<void> updateCard(String deckName, int index, Flashcard updatedCard) async {
+    try {
+      if (index < 0) {
+        Logger.error('Error: Índice inválido al actualizar flashcard', null);
+        throw Exception('Índice de flashcard inválido');
+      }
+      
+      Logger.db('Actualizando flashcard #$index en "$deckName"');
+      
+      final cards = getFlashcards(deckName);
+      if (index >= cards.length) {
+        Logger.error('Error: Índice fuera de rango al actualizar flashcard', null);
+        throw Exception('Índice fuera de rango');
+      }
+      
+      // Actualizar la tarjeta en la posición especificada
+      cards[index] = updatedCard;
+      
+      // Obtener preguntas existentes para mantenerlas
+      final questions = getQuestions(deckName);
+      
+      // Guardar la baraja actualizada
+      await _dbService.saveDeck(deckName, cards, questions);
+      Logger.info('Flashcard #$index actualizada con éxito en "$deckName"');
+      
+      // Solo notificar si cambian datos importantes para la UI
+      // El estado de repaso espaciado interno normalmente no requiere redibujar la UI
+      if (updatedCard.isFavorite != cards[index].isFavorite ||
+          updatedCard.question != cards[index].question ||
+          updatedCard.answer != cards[index].answer) {
+        notifyListeners();
+      }
+    } catch (e) {
+      Logger.error('Error al actualizar flashcard en "$deckName"', e);
       rethrow;
     }
   }
